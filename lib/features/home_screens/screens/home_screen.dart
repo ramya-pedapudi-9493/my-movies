@@ -16,21 +16,25 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    // Fetch movies when the HomeScreen initializes
-    _fetchMovies();
-    Future.microtask(
-        () => Provider.of<MovieProvider>(context, listen: false).fetchMovies());
+    // Defer the fetchMovies call until after the first frame
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _fetchMovies();
+    });
   }
 
   void _fetchMovies() async {
     try {
+      // Fetch movies without calling notifyListeners during the build phase
       await Provider.of<MovieProvider>(context, listen: false).fetchMovies();
     } catch (e) {
-      // Display an error message in the UI
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-            content: Text('Failed to load movies. Please try again later.')),
-      );
+      // Display an error message after the frame has been rendered
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to load movies. Please try again later.'),
+          ),
+        );
+      }
     }
   }
 
